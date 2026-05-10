@@ -123,6 +123,12 @@ Spawn one agent per node below — they only touch disjoint files:
 not edit those files in their first PR; if they need a route, they ask α
 to add it (cheap PR).
 
+## Status
+
+- **A1** ✅ landed on `claude/implement-roadmap-a1-…` — login route +
+  screen + `api::auth` stubs. Unblocks A2.
+- All other nodes still pending.
+
 ## Wave 2 (after wave-1 PRs land)
 
 - **A2** unblocked by A1.
