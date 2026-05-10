@@ -1,0 +1,18 @@
+[book]
+title = "ClassForge Web — Design & Roadmap"
+authors = ["ClassForge contributors"]
+description = "Architecture, login flow, deployment, and parallelizable roadmap for the Leptos frontend."
+language = "en"
+multilingual = false
+src = "src"
+
+[output.html]
+default-theme = "ayu"
+preferred-dark-theme = "ayu"
+git-repository-url = "https://github.com/bloboss/class-forge-web"
+edit-url-template = "https://github.com/bloboss/class-forge-web/edit/main/book/{path}"
+mathjax-support = false
+
+[output.html.fold]
+enable = true
+level = 1
