@@ -4,11 +4,12 @@ use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::icons::Icon;
-use crate::router::{provide_router, use_route, navigate, Route};
+use crate::router::{navigate, provide_router, use_route, Route};
 use crate::screens::{
     assignment_detail::AssignmentDetail,
     classroom::ClassroomShell,
     dashboard::DashboardScreen,
+    login::{LoginCallbackScreen, LoginScreen},
     onboarding::OnboardingScreen,
 };
 
@@ -33,6 +34,9 @@ pub fn App() -> impl IntoView {
     view! {
         <>
             {move || match route.get() {
+                Route::Login => view! { <LoginScreen/> }.into_any(),
+                Route::LoginCallback { code } =>
+                    view! { <LoginCallbackScreen code=code/> }.into_any(),
                 Route::Onboarding => view! { <OnboardingScreen/> }.into_any(),
                 Route::Dashboard => view! { <DashboardScreen/> }.into_any(),
                 Route::Classroom { class_id, tab } =>
@@ -56,14 +60,26 @@ pub fn App() -> impl IntoView {
 fn NavChrome() -> impl IntoView {
     let open = RwSignal::new(false);
     let items: Vec<(&'static str, &'static str, &'static str)> = vec![
-        ("Onboarding (option C)",                "/onboarding",                  "sparkles"),
-        ("Classes dashboard",                    "/classes",                     "home"),
-        ("Algorithms · Assignments (default)",   "/classes/cs331/assignments",   "clipboard-list"),
-        ("Algorithms · Roster",                  "/classes/cs331/roster",        "users"),
-        ("Algorithms · New assignment",          "/classes/cs331/new",           "plus"),
-        ("Algorithms · CI / CD",                 "/classes/cs331/cicd",          "beaker"),
-        ("Algorithms · Analytics",               "/classes/cs331/analytics",     "spark"),
-        ("Algorithms · Settings",                "/classes/cs331/settings",      "settings"),
+        ("Onboarding (option C)", "/onboarding", "sparkles"),
+        ("Classes dashboard", "/classes", "home"),
+        (
+            "Algorithms · Assignments (default)",
+            "/classes/cs331/assignments",
+            "clipboard-list",
+        ),
+        ("Algorithms · Roster", "/classes/cs331/roster", "users"),
+        ("Algorithms · New assignment", "/classes/cs331/new", "plus"),
+        ("Algorithms · CI / CD", "/classes/cs331/cicd", "beaker"),
+        (
+            "Algorithms · Analytics",
+            "/classes/cs331/analytics",
+            "spark",
+        ),
+        (
+            "Algorithms · Settings",
+            "/classes/cs331/settings",
+            "settings",
+        ),
     ];
     view! {
         <div class="nav-chrome">
@@ -101,9 +117,9 @@ fn NavChrome() -> impl IntoView {
 #[component]
 fn TweaksPanel(theme: RwSignal<String>, tweaks_open: RwSignal<bool>) -> impl IntoView {
     let themes: Vec<(&str, &str, &str, &str)> = vec![
-        ("cream", "Warm cream",  "#fbf7f0", "#4338ca"),
-        ("dark",  "Studio dark", "#161310", "#a78bfa"),
-        ("slate", "Cool slate",  "#f4f6f8", "#0891b2"),
+        ("cream", "Warm cream", "#fbf7f0", "#4338ca"),
+        ("dark", "Studio dark", "#161310", "#a78bfa"),
+        ("slate", "Cool slate", "#f4f6f8", "#0891b2"),
     ];
     view! {
         <div class="tweaks-panel">
