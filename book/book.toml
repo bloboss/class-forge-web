@@ -3,7 +3,6 @@ title = "ClassForge Web — Design & Roadmap"
 authors = ["ClassForge contributors"]
 description = "Architecture, login flow, deployment, and parallelizable roadmap for the Leptos frontend."
 language = "en"
-multilingual = false
 src = "src"
 
 [output.html]
