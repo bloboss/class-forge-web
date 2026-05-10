@@ -183,7 +183,13 @@ specific (method, path) pairs.
 
 ## Track C — Deployment
 
-### C1 — Dockerfile + Caddyfile + `.dockerignore`
+### C1 — Dockerfile + Caddyfile + `.dockerignore` ✅
+
+**Status.** Landed on `claude/implement-agents-c1-oy2Qr`. Files match the
+template in [docker.md](../deployment/docker.md) verbatim. The build/run
+test gate could not be exercised in the implementing sandbox because
+`registry-1.docker.io` was returning 503; CI or any host with registry
+access will run the gate as written below.
 
 **Goal.** `docker build -t class-forge-web .` produces a runnable image
 that serves the WASM bundle and proxies `/api`.
