@@ -329,7 +329,7 @@ E1–E4 are mutually parallel: each touches one file.
 
 ## Track F — Docs & CI
 
-### F1 — mdbook CI build
+### F1 — mdbook CI build ✅ landed
 
 **Goal.** Every PR builds the book and uploads `book/book/` as an
 artifact; pushes to `main` deploy it to GitHub Pages.
@@ -338,6 +338,13 @@ artifact; pushes to `main` deploy it to GitHub Pages.
 
 **Test gate.** PR shows a green "book / build" check; artifact contains
 `index.html`.
+
+**Status.** Shipped on `claude/implement-agents-d1-yzde8`. Workflow
+triggers on `book/**` changes (PR + push to `main`), uploads the
+generated site as both a regular workflow artifact (always) and a Pages
+artifact (`main` only), then a `deploy` job publishes it to GitHub
+Pages. First-time enablement requires a repo admin to set
+**Settings → Pages → Source = "GitHub Actions"**.
 
 ---
 
@@ -352,6 +359,35 @@ quarterly.
 - `book/src/SUMMARY.md` — link the ADR section.
 
 **Test gate.** `mdbook build` clean.
+
+---
+
+## Track G — Cross-cutting CI
+
+### G1 — Rust CI workflow ✅ landed
+
+**Goal.** Every PR runs the cross-cutting Rust gates listed in
+[map.md](./map.md): `cargo fmt`, `cargo clippy`, `cargo check`, `trunk
+build --release`, and (now that D1 is in) `wasm-pack test --headless
+--firefox`.
+
+**Files.** `.github/workflows/ci.yml`.
+
+**Approach.** One workflow with five parallel jobs (`fmt`, `clippy`,
+`check`, `trunk-build`, `wasm-test`), all keyed on the stable toolchain
+with the `wasm32-unknown-unknown` target. `Swatinem/rust-cache` keeps
+incremental builds cheap. The `trunk-build` job uploads `dist/` as an
+artifact so reviewers can sanity-check the bundle without a local
+toolchain.
+
+**Test gate.** Five green checks on every PR. Initial enablement on
+PR #2 will surface pre-existing fmt/clippy debt in `src/app.rs` and
+`src/screens/*` — those files belong to other agent cards (A1, E1–E4)
+under the "one agent per file" rule, so the fixes ride along with those
+PRs rather than being absorbed into the CI setup.
+
+**Out of scope.** Playwright (D3, after C2), GitHub Pages publishing
+(F1).
 
 ---
 
