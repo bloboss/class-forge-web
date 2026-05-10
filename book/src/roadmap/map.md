@@ -18,6 +18,7 @@ in [agent task cards](./agents.md). This page is the dependency graph.
 | **D** | Test infrastructure         | yes            |
 | **E** | Screen migrations to API    | after A1 + B1  |
 | **F** | mdbook CI & polish          | yes            |
+| **G** | Cross-cutting Rust CI       | yes            |
 
 Tracks A, B, C, D, F have **no inter-track dependencies** at their starting
 nodes — four agents can begin simultaneously. Track E gates on the
@@ -113,9 +114,10 @@ Spawn one agent per node below — they only touch disjoint files:
 | α     | A1   | `src/screens/login.rs`, `src/router.rs` (add variants), `src/app.rs` (route arm) |
 | β     | B1   | `src/api/`, `Cargo.toml` (gloo-net dep)        |
 | γ     | C1   | `Dockerfile`, `deploy/Caddyfile`, `.dockerignore` |
-| δ     | D1   | `tests/`, `Cargo.toml` (dev-deps), `.cargo/config.toml` |
-| ε     | F1   | `.github/workflows/book.yml`                   |
+| δ     | D1 ✅ | `tests/`, `Cargo.toml` (dev-deps), `.cargo/config.toml` |
+| ε     | F1 ✅ | `.github/workflows/book.yml`                   |
 | ζ     | F2   | `book/src/adr/0001-stay-on-leptos.md`, `book/src/SUMMARY.md` |
+| η     | G1 ✅ | `.github/workflows/ci.yml`                     |
 
 `src/router.rs` and `src/app.rs` are touched only by α. Other agents must
 not edit those files in their first PR; if they need a route, they ask α
@@ -127,7 +129,8 @@ to add it (cheap PR).
 - **B2** unblocked by B1.
 - **B3** unblocked by B1 (parallel to B2).
 - **C2** unblocked by C1.
-- **D2** unblocked by D1.
+- **D2** unblocked by D1 ✅ (harness landed — `tests/smoke.rs` passes
+  `cargo build --target wasm32-unknown-unknown --test smoke`).
 
 ## Wave 3
 
@@ -156,3 +159,7 @@ mdbook build
 
 Tracks D1 and onwards add `wasm-pack test --headless --firefox` and (D3)
 `npx playwright test` to the pipeline.
+
+These cross-cutting gates are enforced by **G1** (`.github/workflows/ci.yml`)
+on every PR. **F1** (`.github/workflows/book.yml`) handles the mdbook
+build separately so doc-only PRs don't block on Rust caches.
