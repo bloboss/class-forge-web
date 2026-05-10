@@ -158,7 +158,8 @@ mdbook build
 ```
 
 Tracks D1 and onwards add `wasm-pack test --headless --firefox` and (D3)
-`npx playwright test` to the pipeline.
+`npx playwright test` to the pipeline. C1 adds a `docker build` + smoke
+job (build the image, boot the container, curl `/` for the SPA shell).
 
 These cross-cutting gates are enforced by **G1** (`.github/workflows/ci.yml`)
 on every PR. **F1** (`.github/workflows/book.yml`) handles the mdbook

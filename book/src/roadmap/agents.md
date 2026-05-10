@@ -187,9 +187,10 @@ specific (method, path) pairs.
 
 **Status.** Landed on `claude/implement-agents-c1-oy2Qr`. Files match the
 template in [docker.md](../deployment/docker.md) verbatim. The build/run
-test gate could not be exercised in the implementing sandbox because
-`registry-1.docker.io` was returning 503; CI or any host with registry
-access will run the gate as written below.
+test gate is enforced on every PR by the `docker-build` job in
+`.github/workflows/ci.yml` (uses buildx with GHA cache, runs the
+container with `BACKEND_URL=http://example.invalid`, and curls `/` for
+the SPA shell marker).
 
 **Goal.** `docker build -t class-forge-web .` produces a runnable image
 that serves the WASM bundle and proxies `/api`.
