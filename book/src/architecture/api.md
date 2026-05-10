@@ -2,13 +2,24 @@
 
 ## What we have today
 
-`src/data.rs` returns hard-coded `Vec<Classroom>`, `Vec<Assignment>`, etc. on
-every call. Screens invoke these directly during render. That's fine for a
-prototype, but it makes it impossible to:
+`src/data.rs` returns hard-coded `Vec<Classroom>`, `Vec<Assignment>`, etc.
+on every call. Screens invoke these directly during render. That's fine
+for a prototype, but it makes it impossible to:
 
 - show loading / error states,
 - propagate updates from one screen to another,
 - mock the API in tests.
+
+**Status (2026-05): track B1 has landed atop A1 + E1.** `src/api/client.rs`
+now contains the shared `Client`, `ApiError`, `Method`, `Response`, and
+`Transport` trait described below; `src/api/mod.rs` re-exports them so
+existing call sites (`api::ApiError`, used by `state::Resource`) keep
+working without churn. `src/api/auth.rs` keeps the A1 stub signatures
+(`login(String, String)`, `logout()`, `me()`) so the login screen
+continues to work — A2 will rewrite those bodies to call through
+`Client`. `api::forges::list()` similarly keeps its fixture body until
+a call site is wired through `Client`. The full `Resource<T>` state
+context for the remaining resources still belongs to track B2.
 
 ## Target shape
 
@@ -46,21 +57,41 @@ Screens render against `Resource<T>`; they no longer call `data::*` directly.
 
 ## HTTP client
 
-Use [`gloo-net`](https://docs.rs/gloo-net) (already common in the Leptos
-ecosystem). One `Client` instance is provided via context:
+Built on [`gloo-net`](https://docs.rs/gloo-net) (already common in the
+Leptos ecosystem). One `Client` instance is provided via Leptos context:
 
 ```rust
 pub struct Client {
-    base: String,           // "/api" in prod, "http://localhost:8080/api" in dev
-    csrf: Option<String>,   // read from cookie at boot
+    base: String,                  // "/api" in prod, "http://localhost:8080/api" in dev
+    csrf: Option<String>,          // read from `csrf_token` cookie at boot
+    transport: Box<dyn Transport>, // GlooTransport in prod, MockTransport in tests
 }
 ```
 
 Every request:
 - sends `credentials: include` (cookies),
-- includes `X-CSRF-Token` for non-GET,
-- maps `401` to `ApiError::Unauthorized` (which the session layer listens
-  for and flips to `Session::Anonymous`).
+- includes `X-CSRF-Token` on every mutating method (anything other than
+  `GET`),
+- maps `401 → ApiError::Unauthorized` (which the session layer listens
+  for and flips to `Session::Anonymous`),
+- maps remaining `4xx → ApiError::Client(code, body)`,
+- maps `5xx → ApiError::Server(code)`,
+- maps transport / parse failures to `ApiError::Network(_)` /
+  `ApiError::Decode(_)`.
+
+The `Transport` trait isolates the `gloo-net` dependency so unit tests
+can substitute an in-memory implementation. Track B3 ships the
+fixture-driven `MockTransport`; the `Client` unit tests in
+`src/api/client.rs` use a tiny recording transport to assert URL
+composition and CSRF behaviour. Those tests are written with
+`#[wasm_bindgen_test]` so they run under the D1 harness and inside the
+G1 CI workflow's `wasm-pack test --headless --firefox` job.
+
+URL composition rules (`Client::url(path)`):
+- Trailing `/` on the base is stripped at construction.
+- A leading `/` on the path is optional — both `"/auth/me"` and
+  `"auth/me"` produce `"<base>/auth/me"`.
+- Empty path returns the base unchanged.
 
 ## Wire types vs. view types
 
@@ -94,10 +125,10 @@ so they can run in parallel once the API layer lands.
 
 | Module                  | State                            |
 | ----------------------- | -------------------------------- |
-| `api::ApiError`         | landed (E1 scaffold)             |
-| `api::forges`           | wire types + `list()` against fixtures (E1 scaffold) |
-| `api::client::Client`   | not yet — task **B1**            |
-| `api::auth`             | not yet — task **A1/A2/A4**      |
+| `api::ApiError`         | landed (B1 — moved into `client.rs`, re-exported through `api::*`) |
+| `api::client::Client`   | landed (B1 — `Client`, `Method`, `Response`, `Transport`, `GlooTransport`) |
+| `api::forges`           | wire types + `list()` against fixtures (E1 scaffold; body swaps to `Client::get` once a call site is wired) |
+| `api::auth`             | A1 stubs (`login`, `logout`, `me`); bodies move to `Client` calls in **A2/A4** |
 | `api::classrooms`       | not yet — task **E2**            |
 | `api::assignments`      | not yet — task **E3/E4**         |
 | `api::roster`           | not yet — task **E3**            |
@@ -107,5 +138,6 @@ so they can run in parallel once the API layer lands.
 | `state::{classrooms,…}` | not yet — task **B2**            |
 
 The "scaffold" tag means the public surface is real but the implementation
-is a fixture stub; replacing it with the gloo-net call B1 introduces is a
-local change inside the corresponding `api::*::*()` function body.
+is a fixture stub; now that B1 has landed, replacing each scaffolded
+body with a `Client::get` call is a local change inside the
+corresponding `api::*::*()` function.
