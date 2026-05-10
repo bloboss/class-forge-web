@@ -113,7 +113,7 @@ Spawn one agent per node below — they only touch disjoint files:
 | α     | A1   | `src/screens/login.rs`, `src/router.rs` (add variants), `src/app.rs` (route arm) |
 | β     | B1   | `src/api/`, `Cargo.toml` (gloo-net dep)        |
 | γ     | C1   | `Dockerfile`, `deploy/Caddyfile`, `.dockerignore` |
-| δ     | D1   | `tests/`, `Cargo.toml` (dev-deps), `.cargo/config.toml` |
+| δ     | D1 ✅ | `tests/`, `Cargo.toml` (dev-deps), `.cargo/config.toml` |
 | ε     | F1   | `.github/workflows/book.yml`                   |
 | ζ     | F2   | `book/src/adr/0001-stay-on-leptos.md`, `book/src/SUMMARY.md` |
 
@@ -127,7 +127,8 @@ to add it (cheap PR).
 - **B2** unblocked by B1.
 - **B3** unblocked by B1 (parallel to B2).
 - **C2** unblocked by C1.
-- **D2** unblocked by D1.
+- **D2** unblocked by D1 ✅ (harness landed — `tests/smoke.rs` passes
+  `cargo build --target wasm32-unknown-unknown --test smoke`).
 
 ## Wave 3
 

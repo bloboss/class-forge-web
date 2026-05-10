@@ -244,7 +244,7 @@ its OAuth handshake on a manual login attempt.
 
 ## Track D — Tests
 
-### D1 — `wasm-bindgen-test` harness
+### D1 — `wasm-bindgen-test` harness ✅ landed
 
 **Goal.** `wasm-pack test --headless --firefox` runs at least one passing
 test from `tests/`.
@@ -258,6 +258,12 @@ test from `tests/`.
 ```bash
 wasm-pack test --headless --firefox
 ```
+
+**Status.** Shipped on `claude/implement-agents-d1-yzde8`. The smoke test
+compiles for `wasm32-unknown-unknown` (`cargo build --target
+wasm32-unknown-unknown --test smoke`); running the headless browser gate
+requires `wasm-pack` + Firefox in CI, which lands with F1. D2 and any
+B-track unit tests can now use `#[wasm_bindgen_test]` directly.
 
 ---
 
