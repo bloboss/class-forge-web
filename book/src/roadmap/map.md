@@ -10,15 +10,15 @@ in [agent task cards](./agents.md). This page is the dependency graph.
 
 ## Tracks at a glance
 
-| Track | Theme                       | Can start now? |
-| ----- | --------------------------- | -------------- |
-| **A** | Auth & session plumbing     | yes            |
-| **B** | API client + state refactor | yes            |
-| **C** | Docker + compose            | yes            |
-| **D** | Test infrastructure         | yes            |
-| **E** | Screen migrations to API    | after A1 + B1  |
-| **F** | mdbook CI & polish          | yes            |
-| **G** | Cross-cutting Rust CI       | yes            |
+| Track | Theme                       | Can start now?       |
+| ----- | --------------------------- | -------------------- |
+| **A** | Auth & session plumbing     | yes                  |
+| **B** | API client + state refactor | yes                  |
+| **C** | Docker + compose            | C2 unblocked (C1 ✅) |
+| **D** | Test infrastructure         | yes                  |
+| **E** | Screen migrations to API    | after A1 + B1        |
+| **F** | mdbook CI & polish          | yes                  |
+| **G** | Cross-cutting Rust CI       | yes                  |
 
 Tracks A, B, C, D, F have **no inter-track dependencies** at their starting
 nodes — four agents can begin simultaneously. Track E gates on the
@@ -135,7 +135,7 @@ to add it (cheap PR).
 - **A2** unblocked by A1.
 - **B2** unblocked by B1.
 - **B3** unblocked by B1 (parallel to B2).
-- **C2** unblocked by C1.
+- **C2** unblocked by C1. ✅ C1 has landed — C2 can start.
 - **D2** unblocked by D1 ✅ (harness landed — `tests/smoke.rs` passes
   `cargo build --target wasm32-unknown-unknown --test smoke`).
 
@@ -165,7 +165,8 @@ mdbook build
 ```
 
 Tracks D1 and onwards add `wasm-pack test --headless --firefox` and (D3)
-`npx playwright test` to the pipeline.
+`npx playwright test` to the pipeline. C1 adds a `docker build` + smoke
+job (build the image, boot the container, curl `/` for the SPA shell).
 
 These cross-cutting gates are enforced by **G1** (`.github/workflows/ci.yml`)
 on every PR. **F1** (`.github/workflows/book.yml`) handles the mdbook
