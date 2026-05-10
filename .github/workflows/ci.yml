@@ -80,3 +80,41 @@ jobs:
       - name: Ensure Firefox is installed
         run: firefox --version || sudo apt-get update && sudo apt-get install -y firefox
       - run: wasm-pack test --headless --firefox
+
+  docker-build:
+    name: docker build + smoke (C1 image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: class-forge-web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run container
+        run: |
+          docker run -d --name class-forge-web-ci \
+            -p 8080:8080 \
+            -e BACKEND_URL=http://example.invalid \
+            class-forge-web:ci
+      - name: Wait for /
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/ >/dev/null; then
+              echo "ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "timed out waiting for container"
+          docker logs class-forge-web-ci || true
+          exit 1
+      - name: Assert SPA shell is served
+        run: curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+      - name: Stop container
+        if: always()
+        run: docker rm -f class-forge-web-ci || true
