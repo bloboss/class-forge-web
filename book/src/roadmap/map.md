@@ -145,6 +145,9 @@ to add it (cheap PR).
 - **C3** after C2.
 - **E1–E4** can all run in parallel once A2 + B2 are merged. Each touches
   exactly one screen file, so four agents can run concurrently.
+  - **E1 has shipped early** with a minimal scaffold of the api/forges
+    and state/forges modules so the Onboarding screen could migrate
+    ahead of B1/B2. See [agents.md#E1](./agents.md#e1--onboarding--forges-api--shipped).
 - **D3** after C2.
 
 ## Test gate per task
