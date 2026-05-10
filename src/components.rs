@@ -1,9 +1,9 @@
 //! Shared chrome: top bar, classroom cover artwork, etc.
 
-use leptos::prelude::*;
 use crate::data::{self, CoverKind};
 use crate::icons::Icon;
 use crate::router::navigate;
+use leptos::prelude::*;
 
 pub use crate::icons::ForgeMark;
 
@@ -36,13 +36,12 @@ pub fn TopBar() -> impl IntoView {
 pub fn Cover(kind: CoverKind, #[prop(default = 96)] height: u32) -> impl IntoView {
     let (a, b) = match kind {
         CoverKind::Indigo => ("#4338ca", "#a78bfa"),
-        CoverKind::Warm   => ("#b45309", "#fbbf24"),
-        CoverKind::Slate  => ("#0f172a", "#475569"),
-        CoverKind::Rose   => ("#9d174d", "#f472b6"),
+        CoverKind::Warm => ("#b45309", "#fbbf24"),
+        CoverKind::Slate => ("#0f172a", "#475569"),
+        CoverKind::Rose => ("#9d174d", "#f472b6"),
     };
-    let style = format!(
-        "height: {height}px; background: linear-gradient(135deg, {a} 0%, {b} 100%);"
-    );
+    let style =
+        format!("height: {height}px; background: linear-gradient(135deg, {a} 0%, {b} 100%);");
     let pat_id = format!("p-{:?}-{}", kind, height);
     view! {
         <div class="cover" style=style>

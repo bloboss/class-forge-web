@@ -15,18 +15,32 @@ pub fn ClassroomShell(class_id: String, tab: String) -> impl IntoView {
     let forge = data::forge_by_id(klass.forge).expect("forge");
 
     let items: Vec<(&str, &str, &str, Option<u32>)> = vec![
-        ("assignments", "Assignments",      "clipboard-list", Some(klass.assignments_count)),
-        ("roster",      "Roster",           "users",          Some(klass.students)),
-        ("new",         "New assignment",   "plus",           None),
-        ("cicd",        "CI / CD & tests",  "beaker",         None),
-        ("analytics",   "Analytics",        "spark",          None),
-        ("settings",    "Settings",         "settings",       None),
+        (
+            "assignments",
+            "Assignments",
+            "clipboard-list",
+            Some(klass.assignments_count),
+        ),
+        ("roster", "Roster", "users", Some(klass.students)),
+        ("new", "New assignment", "plus", None),
+        ("cicd", "CI / CD & tests", "beaker", None),
+        ("analytics", "Analytics", "spark", None),
+        ("settings", "Settings", "settings", None),
     ];
 
     let class_id_for_view = class_id.clone();
     let forge_kind = forge.kind;
-    let folder_label = format!("{}/{}", forge.org.unwrap_or("—"), klass.number.to_lowercase().replace(' ', "-"));
-    let forge_label_short = forge.label.split(" · ").next().unwrap_or(forge.label).to_string();
+    let folder_label = format!(
+        "{}/{}",
+        forge.org.unwrap_or("—"),
+        klass.number.to_lowercase().replace(' ', "-")
+    );
+    let forge_label_short = forge
+        .label
+        .split(" · ")
+        .next()
+        .unwrap_or(forge.label)
+        .to_string();
     let forge_label_short_pill = forge_label_short.clone();
 
     let tab_for_view = tab.clone();
@@ -113,9 +127,18 @@ pub fn ClassroomShell(class_id: String, tab: String) -> impl IntoView {
 fn AssignmentsView(class_id: String) -> impl IntoView {
     let all = data::assignments_for_class(&class_id);
     let total = all.len();
-    let n_active = all.iter().filter(|a| a.status == AssignmentStatus::Active).count();
-    let n_graded = all.iter().filter(|a| a.status == AssignmentStatus::Graded).count();
-    let n_draft  = all.iter().filter(|a| a.status == AssignmentStatus::Draft).count();
+    let n_active = all
+        .iter()
+        .filter(|a| a.status == AssignmentStatus::Active)
+        .count();
+    let n_graded = all
+        .iter()
+        .filter(|a| a.status == AssignmentStatus::Graded)
+        .count();
+    let n_draft = all
+        .iter()
+        .filter(|a| a.status == AssignmentStatus::Draft)
+        .count();
 
     let filter = RwSignal::new("all".to_string());
     let q = RwSignal::new(String::new());
@@ -127,13 +150,19 @@ fn AssignmentsView(class_id: String) -> impl IntoView {
         let f = filter.get();
         let qq = q.get().to_lowercase();
         let cid = class_id_filter.clone();
-        data::assignments_for_class(&cid).into_iter().filter(|a| {
-            (f == "all" || matches!((f.as_str(), a.status),
-                ("active", AssignmentStatus::Active) |
-                ("graded", AssignmentStatus::Graded) |
-                ("draft",  AssignmentStatus::Draft)))
-            && (qq.is_empty() || a.title.to_lowercase().contains(&qq))
-        }).collect::<Vec<_>>()
+        data::assignments_for_class(&cid)
+            .into_iter()
+            .filter(|a| {
+                (f == "all"
+                    || matches!(
+                        (f.as_str(), a.status),
+                        ("active", AssignmentStatus::Active)
+                            | ("graded", AssignmentStatus::Graded)
+                            | ("draft", AssignmentStatus::Draft)
+                    ))
+                    && (qq.is_empty() || a.title.to_lowercase().contains(&qq))
+            })
+            .collect::<Vec<_>>()
     };
 
     view! {
@@ -280,39 +309,54 @@ fn RosterView() -> impl IntoView {
 
     let total_count = all.len();
     let filtered = move || {
-        let r = role.get(); let s = status_f.get(); let sec = section.get();
-        let c = chip.get(); let qq = q.get().to_lowercase();
-        data::roster().into_iter().filter(|s_e| {
-            let role_ok = match r.as_str() {
-                "all" => true,
-                "student" => s_e.role == RosterRole::Student,
-                "TA" => s_e.role == RosterRole::Ta,
-                _ => true,
-            };
-            let status_ok = match s.as_str() {
-                "all" => true,
-                "linked" => s_e.status == RosterStatus::Linked,
-                "pending" => s_e.status == RosterStatus::Pending,
-                "invited" => s_e.status == RosterStatus::Invited,
-                _ => true,
-            };
-            let sec_ok = sec == "all" || s_e.section == sec;
-            let chip_ok = match c.as_deref() {
-                Some("low-grade") => s_e.grade.map(|g| g < 0.7).unwrap_or(false),
-                Some("stale-push") => {
-                    let lp = s_e.last_push;
-                    if let Some(num) = lp.split('d').next().and_then(|x| x.trim().parse::<u32>().ok()) {
-                        num >= 7 && lp.contains('d')
-                    } else { false }
-                },
-                _ => true,
-            };
-            let q_ok = qq.is_empty()
-                || s_e.name.to_lowercase().contains(&qq)
-                || s_e.email.to_lowercase().contains(&qq)
-                || s_e.handle.map(|h| h.to_lowercase().contains(&qq)).unwrap_or(false);
-            role_ok && status_ok && sec_ok && chip_ok && q_ok
-        }).collect::<Vec<_>>()
+        let r = role.get();
+        let s = status_f.get();
+        let sec = section.get();
+        let c = chip.get();
+        let qq = q.get().to_lowercase();
+        data::roster()
+            .into_iter()
+            .filter(|s_e| {
+                let role_ok = match r.as_str() {
+                    "all" => true,
+                    "student" => s_e.role == RosterRole::Student,
+                    "TA" => s_e.role == RosterRole::Ta,
+                    _ => true,
+                };
+                let status_ok = match s.as_str() {
+                    "all" => true,
+                    "linked" => s_e.status == RosterStatus::Linked,
+                    "pending" => s_e.status == RosterStatus::Pending,
+                    "invited" => s_e.status == RosterStatus::Invited,
+                    _ => true,
+                };
+                let sec_ok = sec == "all" || s_e.section == sec;
+                let chip_ok = match c.as_deref() {
+                    Some("low-grade") => s_e.grade.map(|g| g < 0.7).unwrap_or(false),
+                    Some("stale-push") => {
+                        let lp = s_e.last_push;
+                        if let Some(num) = lp
+                            .split('d')
+                            .next()
+                            .and_then(|x| x.trim().parse::<u32>().ok())
+                        {
+                            num >= 7 && lp.contains('d')
+                        } else {
+                            false
+                        }
+                    }
+                    _ => true,
+                };
+                let q_ok = qq.is_empty()
+                    || s_e.name.to_lowercase().contains(&qq)
+                    || s_e.email.to_lowercase().contains(&qq)
+                    || s_e
+                        .handle
+                        .map(|h| h.to_lowercase().contains(&qq))
+                        .unwrap_or(false);
+                role_ok && status_ok && sec_ok && chip_ok && q_ok
+            })
+            .collect::<Vec<_>>()
     };
 
     view! {
@@ -486,7 +530,8 @@ impl Default for NewAssignmentForm {
         Self {
             title: String::new(),
             kind: AssignmentKind::Individual,
-            team_min: 2, team_max: 3,
+            team_min: 2,
+            team_max: 3,
             template: String::new(),
             deadline: "2026-05-22".to_string(),
             timezone: "America/Los_Angeles".to_string(),
@@ -735,7 +780,15 @@ fn StepSource(form: RwSignal<NewAssignmentForm>) -> impl IntoView {
 
 #[component]
 fn StepTests(form: RwSignal<NewAssignmentForm>) -> impl IntoView {
-    let frameworks = vec!["pytest", "JUnit", "Jest", "cargo test", "go test", "Catch2", "Custom command"];
+    let frameworks = vec![
+        "pytest",
+        "JUnit",
+        "Jest",
+        "cargo test",
+        "go test",
+        "Catch2",
+        "Custom command",
+    ];
     view! {
         <div style="display: flex; flex-direction: column; gap: 18px">
             <div class="h-section" style="font-size: 22px">"Tests & CI"</div>
@@ -799,7 +852,9 @@ fn ToggleRow<F>(
     title: &'static str,
     sub: &'static str,
 ) -> impl IntoView
-where F: Fn(bool) + 'static + Copy {
+where
+    F: Fn(bool) + 'static + Copy,
+{
     view! {
         <div style="display: flex; align-items: center; gap: 12px">
             <div style="flex: 1">
@@ -878,7 +933,7 @@ fn CICDView() -> impl IntoView {
                 "templates" => view! { <CICDTemplates/> }.into_any(),
                 "secrets"   => view! { <CICDSecrets/> }.into_any(),
                 "logs"      => view! { <CICDLogs/> }.into_any(),
-                _ => view! { <></> }.into_any(),
+                _ => ().into_any(),
             }}
         </div>
     }
@@ -917,9 +972,24 @@ fn CICDRunners() -> impl IntoView {
 #[component]
 fn CICDTemplates() -> impl IntoView {
     let rows = vec![
-        ("python-pytest", "Python · pytest", "12 assignments", "pytest tests/ --junit-xml=results.xml"),
-        ("java-junit",    "Java · JUnit 5",  "3 assignments",  "mvn -B test"),
-        ("rust-cargo",    "Rust · cargo",    "1 assignment",   "cargo test --release"),
+        (
+            "python-pytest",
+            "Python · pytest",
+            "12 assignments",
+            "pytest tests/ --junit-xml=results.xml",
+        ),
+        (
+            "java-junit",
+            "Java · JUnit 5",
+            "3 assignments",
+            "mvn -B test",
+        ),
+        (
+            "rust-cargo",
+            "Rust · cargo",
+            "1 assignment",
+            "cargo test --release",
+        ),
     ];
     view! {
         <div class="card" style="padding: 0">
@@ -963,11 +1033,11 @@ fn CICDSecrets() -> impl IntoView {
 #[component]
 fn CICDLogs() -> impl IntoView {
     let rows = vec![
-        ("apatel", "hw04",   "pass", "12s",      "2 min ago"),
-        ("cyrus",  "hw04",   "fail", "47s",      "5 min ago"),
-        ("fwong",  "proj01", "pass", "3m 12s",   "14 min ago"),
-        ("hpark",  "hw04",   "pass", "11s",      "22 min ago"),
-        ("gabea",  "hw04",   "fail", "9s",       "1h ago"),
+        ("apatel", "hw04", "pass", "12s", "2 min ago"),
+        ("cyrus", "hw04", "fail", "47s", "5 min ago"),
+        ("fwong", "proj01", "pass", "3m 12s", "14 min ago"),
+        ("hpark", "hw04", "pass", "11s", "22 min ago"),
+        ("gabea", "hw04", "fail", "9s", "1h ago"),
     ];
     view! {
         <div class="card" style="padding: 0">
@@ -1022,17 +1092,33 @@ fn AnalyticsView() -> impl IntoView {
 #[component]
 fn SparkChart() -> impl IntoView {
     let data = [42i32, 51, 58, 60, 62, 67, 71, 73, 70, 74, 76, 74];
-    let w = 880.0_f32; let h = 180.0_f32; let pad = 12.0_f32;
+    let w = 880.0_f32;
+    let h = 180.0_f32;
+    let pad = 12.0_f32;
     let n = data.len();
-    let pts: Vec<(f32, f32)> = data.iter().enumerate().map(|(i, v)| {
-        let x = pad + (i as f32 / (n as f32 - 1.0)) * (w - pad * 2.0);
-        let y = h - pad - (*v as f32 / 100.0) * (h - pad * 2.0);
-        (x, y)
-    }).collect();
-    let path = pts.iter().enumerate().map(|(i, (x, y))|
-        format!("{}{:.1} {:.1}", if i == 0 { "M" } else { "L" }, x, y)
-    ).collect::<Vec<_>>().join(" ");
-    let fill_path = format!("{} L {:.1} {:.1} L {:.1} {:.1} Z", path, w - pad, h - pad, pad, h - pad);
+    let pts: Vec<(f32, f32)> = data
+        .iter()
+        .enumerate()
+        .map(|(i, v)| {
+            let x = pad + (i as f32 / (n as f32 - 1.0)) * (w - pad * 2.0);
+            let y = h - pad - (*v as f32 / 100.0) * (h - pad * 2.0);
+            (x, y)
+        })
+        .collect();
+    let path = pts
+        .iter()
+        .enumerate()
+        .map(|(i, (x, y))| format!("{}{:.1} {:.1}", if i == 0 { "M" } else { "L" }, x, y))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let fill_path = format!(
+        "{} L {:.1} {:.1} L {:.1} {:.1} Z",
+        path,
+        w - pad,
+        h - pad,
+        pad,
+        h - pad
+    );
     let grid_lines: Vec<f32> = vec![0.0, 25.0, 50.0, 75.0, 100.0];
     view! {
         <svg viewBox=format!("0 0 {} {}", w, h) style="width: 100%; height: 180px">

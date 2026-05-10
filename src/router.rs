@@ -5,10 +5,20 @@ use wasm_bindgen::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Route {
+    Login,
+    LoginCallback { code: String },
     Onboarding,
     Dashboard,
     Classroom { class_id: String, tab: String },
     AssignmentDetail { class_id: String, asg_id: String },
+}
+
+impl Route {
+    /// Routes that don't require an authenticated session. A3 will use this
+    /// in the `auth_guard` wrapper to decide when to redirect to `/login`.
+    pub fn is_public(&self) -> bool {
+        matches!(self, Route::Login | Route::LoginCallback { .. })
+    }
 }
 
 pub fn parse(hash: &str) -> Route {
@@ -16,6 +26,10 @@ pub fn parse(hash: &str) -> Route {
     let h = if h.is_empty() { "/onboarding" } else { h };
     let parts: Vec<&str> = h.split('/').filter(|s| !s.is_empty()).collect();
     match parts.as_slice() {
+        ["login"] => Route::Login,
+        ["login", "callback"] => Route::LoginCallback {
+            code: read_query_code().unwrap_or_default(),
+        },
         ["onboarding"] => Route::Onboarding,
         ["classes"] => Route::Dashboard,
         ["classes", id, "a", asg] => Route::AssignmentDetail {
@@ -32,6 +46,20 @@ pub fn parse(hash: &str) -> Route {
         },
         _ => Route::Onboarding,
     }
+}
+
+/// Pull `?code=…` out of `window.location.search`. Returns `None` outside a
+/// browser (e.g. unit tests) or if the parameter is absent.
+fn read_query_code() -> Option<String> {
+    let search = web_sys::window()?.location().search().ok()?;
+    let trimmed = search.trim_start_matches('?');
+    for pair in trimmed.split('&') {
+        let mut it = pair.splitn(2, '=');
+        if it.next() == Some("code") {
+            return it.next().map(|s| s.to_string());
+        }
+    }
+    None
 }
 
 pub fn navigate(path: &str) {

@@ -111,7 +111,7 @@ Spawn one agent per node below — they only touch disjoint files:
 
 | Agent | Task | Files touched (exclusive)                      |
 | ----- | ---- | ---------------------------------------------- |
-| α     | A1   | `src/screens/login.rs`, `src/router.rs` (add variants), `src/app.rs` (route arm) |
+| α     | A1 ✅ | `src/screens/login.rs`, `src/router.rs` (add variants), `src/app.rs` (route arm) |
 | β     | B1   | `src/api/`, `Cargo.toml` (gloo-net dep)        |
 | γ     | C1   | `Dockerfile`, `deploy/Caddyfile`, `.dockerignore` |
 | δ     | D1 ✅ | `tests/`, `Cargo.toml` (dev-deps), `.cargo/config.toml` |
@@ -122,6 +122,13 @@ Spawn one agent per node below — they only touch disjoint files:
 `src/router.rs` and `src/app.rs` are touched only by α. Other agents must
 not edit those files in their first PR; if they need a route, they ask α
 to add it (cheap PR).
+
+## Status
+
+- **A1** ✅ shipped — login route + screen + `api::auth` stubs gated by
+  the G1 CI workflow on every PR. Unblocks A2.
+- **D1, F1, G1** ✅ landed on main.
+- All other nodes still pending.
 
 ## Wave 2 (after wave-1 PRs land)
 

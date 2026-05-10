@@ -30,16 +30,25 @@ pub fn AssignmentDetail(class_id: String, asg_id: String) -> impl IntoView {
     let status_pill_class = match a.status {
         AssignmentStatus::Active => "pill pill-info",
         AssignmentStatus::Graded => "pill",
-        AssignmentStatus::Draft  => "pill pill-warn",
+        AssignmentStatus::Draft => "pill pill-warn",
     };
     let status_label = match a.status {
         AssignmentStatus::Active => "active",
         AssignmentStatus::Graded => "graded",
-        AssignmentStatus::Draft  => "draft",
+        AssignmentStatus::Draft => "draft",
     };
-    let tests_color = if a.passing_tests > 0.7 { "var(--ok)" }
-        else if a.passing_tests > 0.4 { "var(--warn)" } else { "var(--err)" };
-    let late_color = if a.late > 5 { "var(--warn)" } else { "var(--ink)" };
+    let tests_color = if a.passing_tests > 0.7 {
+        "var(--ok)"
+    } else if a.passing_tests > 0.4 {
+        "var(--warn)"
+    } else {
+        "var(--err)"
+    };
+    let late_color = if a.late > 5 {
+        "var(--warn)"
+    } else {
+        "var(--ink)"
+    };
 
     view! {
         <div class="app-shell">
@@ -99,7 +108,7 @@ pub fn AssignmentDetail(class_id: String, asg_id: String) -> impl IntoView {
                             .filter(|s| s.role == RosterRole::Student)
                             .take(8).map(|s| {
                                 let initials = data::initials(s.name);
-                                let raw = s.id.bytes().nth(3).unwrap_or(0) as i32;
+                                let raw = s.id.as_bytes().get(3).copied().unwrap_or(0) as i32;
                                 let passing = (raw.unsigned_abs() as i32 * 31) % 100;
                                 let (state_pill, bar_color, label_view) = if passing > 75 {
                                     ("pill pill-ok", "var(--ok)", view! {

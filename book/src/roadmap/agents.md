@@ -17,7 +17,14 @@ Branch convention: `agent/<track><n>-<slug>`, e.g. `agent/a1-login-route`.
 
 ## Track A — Auth
 
-### A1 — Login route + screen (stubbed backend)
+### A1 — Login route + screen (stubbed backend) ✅ shipped
+
+**Status.** Landed on `claude/implement-roadmap-a1-…`. Routes, screen, and
+stubbed `api::auth::{login, logout, me}` are in place; the test gate
+(fmt + clippy + check) passes. `wasm_bindgen_futures` was added so the
+screen can `spawn_local` the stub call. Two pre-existing clippy lints
+elsewhere were fixed inline so the gate could run green; otherwise the PR
+is scoped to the files listed below.
 
 **Goal.** Add `Route::Login` and `Route::LoginCallback` and a working
 `<LoginScreen/>` that renders provider buttons and an email/password form.
