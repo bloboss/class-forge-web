@@ -82,10 +82,30 @@ backend, so most development goes against that. For headless tests
 
 The screens migrate one at a time so we can review each diff in isolation:
 
-1. `OnboardingScreen` → `forges::list`, `auth::oauth_start`
+1. `OnboardingScreen` → `forges::list`, `auth::oauth_start` ✅ **shipped (E1)**
 2. `DashboardScreen` → `classrooms::list`
 3. `ClassroomShell` → `assignments::list_for_class`, `roster::list`
 4. `AssignmentDetail` → `assignments::get`
 
 Each migration is a separate task card in the [roadmap](../roadmap/map.md)
 so they can run in parallel once the API layer lands.
+
+## Current status
+
+| Module                  | State                            |
+| ----------------------- | -------------------------------- |
+| `api::ApiError`         | landed (E1 scaffold)             |
+| `api::forges`           | wire types + `list()` against fixtures (E1 scaffold) |
+| `api::client::Client`   | not yet — task **B1**            |
+| `api::auth`             | not yet — task **A1/A2/A4**      |
+| `api::classrooms`       | not yet — task **E2**            |
+| `api::assignments`      | not yet — task **E3/E4**         |
+| `api::roster`           | not yet — task **E3**            |
+| `state::Resource<T>`    | landed (E1 scaffold)             |
+| `state::forges`         | landed with lazy provider (E1 scaffold; B2 will tighten) |
+| `state::session`        | not yet — task **A2**            |
+| `state::{classrooms,…}` | not yet — task **B2**            |
+
+The "scaffold" tag means the public surface is real but the implementation
+is a fixture stub; replacing it with the gloo-net call B1 introduces is a
+local change inside the corresponding `api::*::*()` function body.

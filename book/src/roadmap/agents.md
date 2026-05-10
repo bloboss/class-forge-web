@@ -320,10 +320,20 @@ docker compose down -v
 Each card replaces `data::*` calls in a single screen with the matching
 `api::*` calls and `state::*` signals.
 
-### E1 — Onboarding → forges API
-**Files.** `src/screens/onboarding.rs` only.
+### E1 — Onboarding → forges API ✅ shipped
+**Files.** `src/screens/onboarding.rs`, plus a minimal scaffold for the
+unblocked dependencies (`src/api/{mod,forges}.rs`,
+`src/state/{mod,forges}.rs`, `src/lib.rs`).
 **Test gate.** Manual against `docker compose` + `wasm-pack test`.
-**Depends on.** A2, B2.
+**Depends on.** A2, B2 — unmerged at the time E1 shipped, so this card
+included a tiny scaffold:
+- `api::forges::list()` returns the prototype fixtures behind the same
+  signature B1/B2 will use; replacing the body is a one-function change.
+- `state::forges::use_forges()` lazily provides the resource signal in
+  context on first call. B2 will move provisioning to `App` boot and
+  delete the lazy fallback.
+- `data::user()` is still used in the topbar; A2 will replace it with
+  `use_session()`.
 
 ### E2 — Dashboard → classrooms API
 **Files.** `src/screens/dashboard.rs` only.
