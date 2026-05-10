@@ -12,12 +12,18 @@ leptos = { version = "0.7", features = ["csr"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
-web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlElement", "Location", "Storage", "DomTokenList"] }
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlDocument", "Element", "HtmlElement", "Location", "Storage", "DomTokenList", "RequestCredentials"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+gloo-net = "0.6"
+async-trait = "0.1"
+
+[features]
+default = []
+mock = []
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
-serde_json = "1"
 
 [profile.release]
 opt-level = "z"
