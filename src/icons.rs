@@ -3,8 +3,8 @@
 //! Each icon is a small `view!` snippet returned from a `fn` so callers can
 //! drop them inline without juggling component generics.
 
-use leptos::prelude::*;
 use crate::data::ForgeKind;
+use leptos::prelude::*;
 
 #[component]
 pub fn Icon(
@@ -12,7 +12,11 @@ pub fn Icon(
     #[prop(default = 16)] size: u32,
     #[prop(into, optional)] stroke: String,
 ) -> impl IntoView {
-    let stroke = if stroke.is_empty() { "currentColor".to_string() } else { stroke };
+    let stroke = if stroke.is_empty() {
+        "currentColor".to_string()
+    } else {
+        stroke
+    };
     let body = match name.as_str() {
         "search" => view! {
             <circle cx="11" cy="11" r="7"/>
@@ -100,13 +104,13 @@ pub fn Icon(
 #[component]
 pub fn ForgeMark(kind: ForgeKind, #[prop(default = 22)] size: u32) -> impl IntoView {
     let (bg, fg, letter) = match kind {
-        ForgeKind::Forgejo  => ("#fbf6ec", "#d97706", "Fj"),
-        ForgeKind::Gitlab   => ("#fff4ec", "#fc6d26", "GL"),
-        ForgeKind::Github   => ("#f3f0ec", "#1c1917", "Gh"),
-        ForgeKind::Gitea    => ("#ecf6f7", "#609926", "Gt"),
-        ForgeKind::Bitbucket=> ("#eef2ff", "#2684ff", "Bb"),
+        ForgeKind::Forgejo => ("#fbf6ec", "#d97706", "Fj"),
+        ForgeKind::Gitlab => ("#fff4ec", "#fc6d26", "GL"),
+        ForgeKind::Github => ("#f3f0ec", "#1c1917", "Gh"),
+        ForgeKind::Gitea => ("#ecf6f7", "#609926", "Gt"),
+        ForgeKind::Bitbucket => ("#eef2ff", "#2684ff", "Bb"),
         ForgeKind::Codeberg => ("#eaf2ff", "#2185d0", "Cb"),
-        ForgeKind::Custom   => ("#f3ecdc", "#57534e", "··"),
+        ForgeKind::Custom => ("#f3ecdc", "#57534e", "··"),
     };
     let font_size = if size <= 22 { 9 } else { 11 };
     let style = format!(

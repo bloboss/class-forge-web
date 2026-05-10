@@ -142,7 +142,10 @@ pub fn DashboardScreen() -> impl IntoView {
 
 #[component]
 fn NewClassroomModal(show_new: RwSignal<bool>) -> impl IntoView {
-    let live: Vec<_> = data::forges().into_iter().filter(|f| f.status == ForgeStatus::Live).collect();
+    let live: Vec<_> = data::forges()
+        .into_iter()
+        .filter(|f| f.status == ForgeStatus::Live)
+        .collect();
     let initial = live.first().map(|f| f.id.to_string()).unwrap_or_default();
     let chosen = RwSignal::new(initial);
     let cols = format!("repeat({}, 1fr)", live.len());

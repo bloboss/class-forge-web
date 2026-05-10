@@ -12,8 +12,16 @@ use crate::router::navigate;
 pub fn OnboardingScreen() -> impl IntoView {
     let user = data::user();
     let all = data::forges();
-    let live: Vec<Forge> = all.iter().filter(|f| f.status == ForgeStatus::Live).cloned().collect();
-    let soon: Vec<Forge> = all.iter().filter(|f| f.status == ForgeStatus::Soon).cloned().collect();
+    let live: Vec<Forge> = all
+        .iter()
+        .filter(|f| f.status == ForgeStatus::Live)
+        .cloned()
+        .collect();
+    let soon: Vec<Forge> = all
+        .iter()
+        .filter(|f| f.status == ForgeStatus::Soon)
+        .cloned()
+        .collect();
 
     let connected = RwSignal::new({
         let mut s: HashSet<String> = HashSet::new();
@@ -107,7 +115,11 @@ pub fn OnboardingScreen() -> impl IntoView {
 }
 
 #[component]
-fn LiveForgeCard(f: Forge, connected: RwSignal<HashSet<String>>, active_add: RwSignal<Option<String>>) -> impl IntoView {
+fn LiveForgeCard(
+    f: Forge,
+    connected: RwSignal<HashSet<String>>,
+    active_add: RwSignal<Option<String>>,
+) -> impl IntoView {
     let id: String = f.id.to_string();
     let kind = f.kind;
     let label = f.label;
@@ -130,10 +142,12 @@ fn LiveForgeCard(f: Forge, connected: RwSignal<HashSet<String>>, active_add: RwS
     let is_on = Memo::new(move |_| connected.get().contains(&id_for_on));
     let is_active = Memo::new(move |_| active_add.get().as_ref() == Some(&id_for_active));
 
-    let card_style = move || if is_on.get() {
-        "padding: 16px; position: relative; border-color: var(--accent-line); background: var(--accent-soft);"
-    } else {
-        "padding: 16px; position: relative;"
+    let card_style = move || {
+        if is_on.get() {
+            "padding: 16px; position: relative; border-color: var(--accent-line); background: var(--accent-soft);"
+        } else {
+            "padding: 16px; position: relative;"
+        }
     };
 
     let id_toggle = id.clone();
