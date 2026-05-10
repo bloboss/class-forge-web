@@ -1,27 +1,26 @@
 //! Onboarding C — multi-forge connect.
+//!
+//! Migrated to `api::forges` + `state::forges` (task **E1**). The screen no
+//! longer reads `data::forges()`; it subscribes to a `Resource<Vec<Forge>>`
+//! that lazily fetches on first render. The user identity in the topbar
+//! still comes from `data::user()` until task **A2** (session hydration)
+//! lands.
 
 use leptos::prelude::*;
 use std::collections::HashSet;
 
+use crate::api::forges::{Forge, ForgeKind as ApiForgeKind, ForgeStatus};
 use crate::components::ForgeMark;
-use crate::data::{self, Forge, ForgeKind, ForgeStatus};
+use crate::data::{self, ForgeKind as IconForgeKind};
 use crate::icons::Icon;
 use crate::router::navigate;
+use crate::state::forges::use_forges;
+use crate::state::Resource;
 
 #[component]
 pub fn OnboardingScreen() -> impl IntoView {
     let user = data::user();
-    let all = data::forges();
-    let live: Vec<Forge> = all
-        .iter()
-        .filter(|f| f.status == ForgeStatus::Live)
-        .cloned()
-        .collect();
-    let soon: Vec<Forge> = all
-        .iter()
-        .filter(|f| f.status == ForgeStatus::Soon)
-        .cloned()
-        .collect();
+    let forges = use_forges();
 
     let connected = RwSignal::new({
         let mut s: HashSet<String> = HashSet::new();
@@ -47,7 +46,6 @@ pub fn OnboardingScreen() -> impl IntoView {
 
             <div style="flex: 1; display: flex; justify-content: center; padding: 64px 32px">
                 <div style="width: 100%; max-width: 880px">
-                    // Stepper pills (account ✓ → connect forges (current) → roster → done)
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 28px; font-size: 12px; color: var(--ink-3)">
                         <span class="pill pill-ok"><Icon name="check" size=11/>" Account"</span>
                         <span style="width: 24px; height: 1px; background: var(--line)"></span>
@@ -70,28 +68,13 @@ pub fn OnboardingScreen() -> impl IntoView {
                         " · at least one is required to continue"
                     </div>
 
-                    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px">
-                        "Available now"
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 28px">
-                        {live.into_iter().map(|f| view! { <LiveForgeCard f=f connected=connected active_add=active_add/> }).collect_view()}
-                    </div>
-
-                    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px">
-                        "Coming soon · request priority"
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 32px">
-                        {soon.into_iter().map(|f| view! {
-                            <div style="padding: 12px; border-radius: 8px; border: 1px dashed var(--line); display: flex; align-items: center; gap: 10px; opacity: 0.85">
-                                <ForgeMark kind=f.kind size=24/>
-                                <div style="flex: 1; min-width: 0">
-                                    <div style="font-size: 12px; font-weight: 500">{f.label}</div>
-                                    <div style="font-size: 10px; color: var(--ink-4)">{f.note}</div>
-                                </div>
-                                <button class="btn btn-sm btn-ghost" style="font-size: 11px">"+1"</button>
-                            </div>
-                        }).collect_view()}
-                    </div>
+                    {move || match forges.get() {
+                        Resource::Idle | Resource::Loading => view! { <ForgesLoading/> }.into_any(),
+                        Resource::Failed(err) => view! { <ForgesError err=err.to_string()/> }.into_any(),
+                        Resource::Ready(list) => view! {
+                            <ForgesReady list=list connected=connected active_add=active_add/>
+                        }.into_any(),
+                    }}
 
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid var(--line)">
                         <button class="btn btn-ghost"><Icon name="chevron-left" size=14/>" Back"</button>
@@ -115,23 +98,91 @@ pub fn OnboardingScreen() -> impl IntoView {
 }
 
 #[component]
+fn ForgesLoading() -> impl IntoView {
+    view! {
+        <div style="display: flex; align-items: center; gap: 10px; padding: 24px 0; color: var(--ink-3); font-size: 13px">
+            <span class="pill">"Loading forges…"</span>
+        </div>
+    }
+}
+
+#[component]
+fn ForgesError(err: String) -> impl IntoView {
+    view! {
+        <div class="card" style="padding: 16px; margin-bottom: 28px; border-color: var(--danger-line, #f5b8b8); background: var(--danger-soft, #fdecec)">
+            <div style="font-size: 13px; font-weight: 600">"Couldn't load forges"</div>
+            <div style="font-size: 12px; color: var(--ink-3); margin-top: 4px">{err}</div>
+        </div>
+    }
+}
+
+#[component]
+fn ForgesReady(
+    list: Vec<Forge>,
+    connected: RwSignal<HashSet<String>>,
+    active_add: RwSignal<Option<String>>,
+) -> impl IntoView {
+    let live: Vec<Forge> = list
+        .iter()
+        .filter(|f| f.status == ForgeStatus::Live)
+        .cloned()
+        .collect();
+    let soon: Vec<Forge> = list
+        .iter()
+        .filter(|f| f.status == ForgeStatus::Soon)
+        .cloned()
+        .collect();
+
+    view! {
+        <>
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px">
+                "Available now"
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 28px">
+                {live.into_iter().map(|f| view! { <LiveForgeCard f=f connected=connected active_add=active_add/> }).collect_view()}
+            </div>
+
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px">
+                "Coming soon · request priority"
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 32px">
+                {soon.into_iter().map(|f| {
+                    let icon_kind = icon_kind_for(f.kind);
+                    view! {
+                        <div style="padding: 12px; border-radius: 8px; border: 1px dashed var(--line); display: flex; align-items: center; gap: 10px; opacity: 0.85">
+                            <ForgeMark kind=icon_kind size=24/>
+                            <div style="flex: 1; min-width: 0">
+                                <div style="font-size: 12px; font-weight: 500">{f.label.clone()}</div>
+                                <div style="font-size: 10px; color: var(--ink-4)">{f.note.clone()}</div>
+                            </div>
+                            <button class="btn btn-sm btn-ghost" style="font-size: 11px">"+1"</button>
+                        </div>
+                    }
+                }).collect_view()}
+            </div>
+        </>
+    }
+}
+
+#[component]
 fn LiveForgeCard(
     f: Forge,
     connected: RwSignal<HashSet<String>>,
     active_add: RwSignal<Option<String>>,
 ) -> impl IntoView {
-    let id: String = f.id.to_string();
+    let id: String = f.id.clone();
     let kind = f.kind;
-    let label = f.label;
-    let note = f.note;
-    let org = f.org;
+    let icon_kind = icon_kind_for(kind);
+    let label = f.label.clone();
+    let note = f.note.clone();
+    let org = f.org.clone();
     let accounts = f.accounts;
 
     let (default_url, default_org) = match kind {
-        ForgeKind::Gitlab => ("https://gitlab.com", "pcu-classes"),
+        ApiForgeKind::Gitlab => ("https://gitlab.com", "pcu-classes"),
         _ => ("https://forge.cs.pcu.edu", "cs-dept"),
     };
-    let detail_blurb = if matches!(kind, ForgeKind::Forgejo) {
+    let detail_blurb = if matches!(kind, ApiForgeKind::Forgejo) {
         "Self-hosted Forgejo or Codeberg-flavored instance"
     } else {
         "GitLab.com"
@@ -153,24 +204,30 @@ fn LiveForgeCard(
     let id_toggle = id.clone();
     let id_remove = id.clone();
     let id_save = id;
+    let org_for_view = org.clone();
 
     view! {
         <div class="card" style=card_style>
             <div style="display: flex; align-items: flex-start; gap: 12px">
-                <ForgeMark kind=kind size=32/>
+                <ForgeMark kind=icon_kind size=32/>
                 <div style="flex: 1">
                     <div style="display: flex; align-items: center; gap: 8px">
                         <div style="font-size: 14px; font-weight: 600">{label}</div>
-                        {(!note.is_empty()).then(|| view! { <span class="pill" style="font-size: 10px">{note}</span> })}
+                        {(!note.is_empty()).then(|| view! { <span class="pill" style="font-size: 10px">{note.clone()}</span> })}
                     </div>
                     <Show when=move || is_on.get()
                           fallback=move || view! {
                               <div style="font-size: 12px; color: var(--ink-3); margin-top: 4px">{detail_blurb}</div>
                           }>
-                        <div style="font-size: 12px; color: var(--ink-3); margin-top: 4px">
-                            "Org "<code class="mono" style="background: var(--paper); padding: 1px 5px; border-radius: 3px">{org.unwrap_or("—")}</code>
-                            " · "{accounts}" staff accounts linked"
-                        </div>
+                        {
+                            let org_text = org_for_view.clone().unwrap_or_else(|| "—".into());
+                            view! {
+                                <div style="font-size: 12px; color: var(--ink-3); margin-top: 4px">
+                                    "Org "<code class="mono" style="background: var(--paper); padding: 1px 5px; border-radius: 3px">{org_text}</code>
+                                    " · "{accounts}" staff accounts linked"
+                                </div>
+                            }
+                        }
                     </Show>
                 </div>
                 <Show when=move || is_on.get()
@@ -249,5 +306,19 @@ fn LiveForgeCard(
                 }
             </Show>
         </div>
+    }
+}
+
+/// Bridge from the wire enum to the icon-only enum that `ForgeMark` accepts.
+/// Removed once `data::ForgeKind` retires (post-E2/E3/E4).
+fn icon_kind_for(kind: ApiForgeKind) -> IconForgeKind {
+    match kind {
+        ApiForgeKind::Forgejo => IconForgeKind::Forgejo,
+        ApiForgeKind::Gitlab => IconForgeKind::Gitlab,
+        ApiForgeKind::Github => IconForgeKind::Github,
+        ApiForgeKind::Gitea => IconForgeKind::Gitea,
+        ApiForgeKind::Bitbucket => IconForgeKind::Bitbucket,
+        ApiForgeKind::Codeberg => IconForgeKind::Codeberg,
+        ApiForgeKind::Custom => IconForgeKind::Custom,
     }
 }
