@@ -10,15 +10,15 @@ in [agent task cards](./agents.md). This page is the dependency graph.
 
 ## Tracks at a glance
 
-| Track | Theme                       | Can start now?       |
-| ----- | --------------------------- | -------------------- |
-| **A** | Auth & session plumbing     | yes                  |
-| **B** | API client + state refactor | yes                  |
-| **C** | Docker + compose            | C2 unblocked (C1 ✅) |
-| **D** | Test infrastructure         | yes                  |
-| **E** | Screen migrations to API    | after A1 + B1        |
-| **F** | mdbook CI & polish          | yes                  |
-| **G** | Cross-cutting Rust CI       | yes                  |
+| Track | Theme                       | Can start now?                 |
+| ----- | --------------------------- | ------------------------------ |
+| **A** | Auth & session plumbing     | A2 unblocked (A1 ✅)           |
+| **B** | API client + state refactor | B2/B3 unblocked (B1 ✅)        |
+| **C** | Docker + compose            | C2 unblocked (C1 ✅)           |
+| **D** | Test infrastructure         | yes                            |
+| **E** | Screen migrations to API    | unblocked (A1 ✅ + B1 ✅; needs A2 + B2) |
+| **F** | mdbook CI & polish          | yes                            |
+| **G** | Cross-cutting Rust CI       | yes                            |
 
 Tracks A, B, C, D, F have **no inter-track dependencies** at their starting
 nodes — four agents can begin simultaneously. Track E gates on the
@@ -112,7 +112,7 @@ Spawn one agent per node below — they only touch disjoint files:
 | Agent | Task | Files touched (exclusive)                      |
 | ----- | ---- | ---------------------------------------------- |
 | α     | A1 ✅ | `src/screens/login.rs`, `src/router.rs` (add variants), `src/app.rs` (route arm) |
-| β     | B1   | `src/api/`, `Cargo.toml` (gloo-net dep)        |
+| β     | B1 ✅ | `src/api/`, `Cargo.toml` (gloo-net dep)        |
 | γ     | C1   | `Dockerfile`, `deploy/Caddyfile`, `.dockerignore` |
 | δ     | D1 ✅ | `tests/`, `Cargo.toml` (dev-deps), `.cargo/config.toml` |
 | ε     | F1 ✅ | `.github/workflows/book.yml`                   |
@@ -127,15 +127,24 @@ to add it (cheap PR).
 
 - **A1** ✅ shipped — login route + screen + `api::auth` stubs gated by
   the G1 CI workflow on every PR. Unblocks A2.
-- **D1, F1, G1** ✅ landed on main.
+- **B1** ✅ shipped — `Client` / `ApiError` / `Transport` in
+  `src/api/client.rs`, plus 12 `#[wasm_bindgen_test]` cases on the D1
+  harness. The `ApiError` that E1 had scaffolded in `api/mod.rs` moved
+  into `client.rs` and is re-exported, so E1's call sites keep
+  compiling. Unblocks B2 / B3 (parallel) and lets A2 swap the auth
+  stubs for real `Client`-backed calls.
+- **E1** ✅ shipped early (Onboarding → `api::forges` + `state::forges`
+  scaffolds). The fixture body inside `api::forges::list()` swaps to
+  `Client::get("/forges")` as part of B2's wiring.
+- **C1, D1, F1, G1** ✅ landed on main.
 - All other nodes still pending.
 
 ## Wave 2 (after wave-1 PRs land)
 
-- **A2** unblocked by A1.
-- **B2** unblocked by B1.
-- **B3** unblocked by B1 (parallel to B2).
-- **C2** unblocked by C1. ✅ C1 has landed — C2 can start.
+- **A2** unblocked by A1 ✅ + B1 ✅ — can now call through `api::Client`.
+- **B2** unblocked by B1 ✅.
+- **B3** unblocked by B1 ✅ (parallel to B2).
+- **C2** unblocked by C1 ✅ — can start.
 - **D2** unblocked by D1 ✅ (harness landed — `tests/smoke.rs` passes
   `cargo build --target wasm32-unknown-unknown --test smoke`).
 

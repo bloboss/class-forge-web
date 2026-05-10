@@ -127,31 +127,42 @@ navigates to `/login`.
 
 ## Track B — API & state
 
-### B1 — `api::Client` + `ApiError`
+### B1 — `api::Client` + `ApiError` ✅ shipped (2026-05)
+
+**Status.** Landed on `claude/implement-agents-b1-bbZre` atop A1.
+`src/api/client.rs` ships `Client`, `ApiError`, `Method`, `Response`,
+and the `Transport` trait (with the default `GlooTransport`). The A1
+stub signatures in `src/api/auth.rs` are kept untouched so the login
+screen still compiles — A2 will rewrite those bodies to call through
+`Client`. 12 `#[wasm_bindgen_test]` unit tests cover URL composition,
+status mapping, CSRF injection on mutating verbs only, and cookie
+parsing; they run under the D1 harness via `wasm-pack test --headless
+--firefox` and are enforced on every PR by the G1 `wasm-test` job.
 
 **Goal.** Land the HTTP client used by every other API module.
 
 **Files.**
-- `Cargo.toml` — add `gloo-net = "0.6"`, `serde_json = "1"`, `wasm-bindgen-futures = "0.4"`.
-- `src/api/mod.rs`, `src/api/client.rs` — `Client`, `ApiError`, `Method`, `request()`.
-- `src/api/auth.rs` — empty stubs for `me`, `login`, `logout` so A1/A2 can compile.
-- `src/lib.rs` — `pub mod api;`
+- `Cargo.toml` — add `gloo-net = "0.6"`, `serde_json = "1"`, `async-trait = "0.1"`; enable `RequestCredentials` and `HtmlDocument` web-sys features.
+- `src/api/mod.rs` — add `pub mod client;` and re-export `Client`, `ApiError`, `Method`, `Response`, `Transport`, `GlooTransport`.
+- `src/api/client.rs` — the `Client`, `ApiError`, `Method`, `Transport`, and `request()` types described in **Approach**.
 
 **Approach.**
 1. `Client::new(base: &str)` reads the `csrf_token` cookie via `web_sys::HtmlDocument::cookie()`.
-2. `request<T: DeserializeOwned, B: Serialize>(method, path, body) -> Result<T, ApiError>` uses `gloo_net::http::Request`. Always sets `credentials: include`.
+2. `request<T: DeserializeOwned, B: Serialize>(method, path, body) -> Result<T, ApiError>` uses `gloo_net::http::RequestBuilder`. Always sets `credentials: include`.
 3. Map status: `401 → Unauthorized`, `4xx → Client(code, msg)`, `5xx → Server(code)`, network → `Network(string)`.
 4. Provide a `Transport` trait so B3 can swap a mock in tests.
 
 **Test gate.**
 ```bash
+cargo fmt --all -- --check
 cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
 cargo check --target wasm32-unknown-unknown
-# A unit test that constructs a Client and asserts URL composition.
-cargo test --target wasm32-unknown-unknown -p class-forge-web client::
+# Client unit tests run under the D1 wasm-bindgen-test harness:
+wasm-pack test --headless --firefox
 ```
 
-**Out of scope.** Resource layer (B2), tests harness (B3), screen wiring.
+**Out of scope.** Resource layer (B2), `MockTransport` (B3), screen wiring,
+rewriting `api::auth` stubs (A2/A4).
 
 ---
 
