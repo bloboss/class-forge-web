@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: cargo clippy (wasm32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+
+  check:
+    name: cargo check (wasm32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --target wasm32-unknown-unknown --all-targets
+
+  trunk-build:
+    name: trunk build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: jetli/trunk-action@v0.5.0
+        with:
+          version: latest
+      - run: trunk build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+
+  wasm-test:
+    name: wasm-pack test (D1 harness)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+      - name: Ensure Firefox is installed
+        run: firefox --version || sudo apt-get update && sudo apt-get install -y firefox
+      - run: wasm-pack test --headless --firefox
